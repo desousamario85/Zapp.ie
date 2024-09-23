@@ -1,13 +1,23 @@
 // src/types/global.d.ts
-interface Zap {
+
+interface Reward {
+  image: string;
+  name: string;
+  shortDescription: string;
+  link: string;
+  price: number;
+}
+
+interface UserAccount {
   id: string;
-  bolt11: string;
-  from: string | null;
-  to: string | null;
-  memo: string;
-  amount: number;
-  wallet_id: string;
-  time: number;
+  is_super_user: boolean;
+  is_admin: boolean;
+  username: string;
+  email: string;
+  balance_msat: number;
+  transaction_count: number;
+  wallet_count: number;
+  last_payment: string;
 }
 
 interface Wallet {
@@ -27,18 +37,34 @@ interface User {
   profileImg: string;
   aadObjectId: string;
   email: string;
-  privateWallet: Wallet;
-  allowanceWallet: Wallet;
+  privateWallet: Wallet | null;
+  allowanceWallet: Wallet | null;
 }
 
 type WalletType = 'Allowance' | 'Private';
+
+interface Transaction {
+  checking_id: string;
+  pending: boolean;
+  amount: number; // in millisatoshis (msats)
+  fee: number;
+  memo: string;
+  time: number; // Unix timestamp
+  extra: { [key: string]: any }; // JSON object
+  wallet_id: string;
+}
+
+declare module '*.module.css' {
+  const classes: { [key: string]: string };
+  export default classes;
+}
 
 declare module '*.svg' {
   const content: any;
   export default content;
 }
 
-declare module '*.module.css' {
-  const classes: { [key: string]: string };
-  export default classes;
+declare module '*.png' {
+  const content: any;
+  export default content;
 }
