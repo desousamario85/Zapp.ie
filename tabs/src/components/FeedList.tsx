@@ -26,52 +26,81 @@ const FeedList: React.FC<FeedListProps> = ({ timestamp }) => {
   const [error, setError] = useState<string | null>(null);
   const initialRender = useRef(true);
 
-  const paymentsSinceTimestamp =
-    timestamp === null || timestamp === undefined || timestamp === 0
-      ? 0
-      : timestamp;
-
-  const fetchZaps = async () => {
-    console.log('Fetching payments since: ', paymentsSinceTimestamp);
-
-    const wallets = await getWallets('Receiving'); // We'll just look at the receiving wallets.
-    let allZaps: Zap[] = [];
-
-    // Loop through all the wallets
-    if (wallets) {
-      for (const wallet of wallets) {
-        const payments = await getPaymentsSince(
-          wallet.inkey,
-          paymentsSinceTimestamp,
-        );
-
-        for (const payment of payments) {
-          const zap: Zap = {
-            id: payment.checking_id,
-            bolt11: payment.bolt11,
-            from: getUserName(payment.extra?.from),
-            to: getUserName(payment.extra?.to),
-            memo: payment.memo,
-            amount: payment.amount / 1000,
-            wallet_id: payment.wallet_id,
-            time: payment.time,
-          };
-
-          allZaps.push(zap);
-        }
-      }
-    }
-    //setZaps(zaps);
-    setZaps(prevState => [...prevState, ...allZaps]);
-  };
-
-  // Debounce the fetchZaps function
-  const debouncedFetchZaps = useCallback(debounce(fetchZaps, 300), [fetchZaps]);
 
   useEffect(() => {
-    // Clear the zaps
-    setZaps([]);
-    fetchZaps();
+    const paymentsSinceTimestamp =
+      timestamp === null || timestamp === undefined || timestamp === 0
+        ? 0
+        : timestamp;
+
+    const fetchZaps = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        let allZaps: ZapTransaction[] = [];
+
+        const users = await getUsers(adminKey, {});
+
+        if (users) {
+          for (const user of users) {
+            const wallets = await getUserWallets(adminKey, user.id);
+
+            if (wallets) {
+              const allowanceWallets = wallets.filter(
+                wallet => wallet.name === 'Allowance',
+              );
+
+              for (const wallet of allowanceWallets) {
+                const transactions = await getWalletTransactionsSince(
+                  wallet.inkey,
+                  paymentsSinceTimestamp,
+                  { tag: 'zap' },
+                );
+
+                let zaps: ZapTransaction[] = await Promise.all(
+                  transactions.map(async (transaction: any) => ({
+                    from: user,
+                    to: await getUser(adminKey, transaction.extra?.to?.user),
+                    transaction: transaction,
+                  })),
+                );
+
+                allZaps = allZaps.concat(zaps);
+                //console.log('Transactions: ', transactions);
+              }
+            } else {
+              console.log('No wallets found for user: ', user.id);
+            }
+          }
+        }
+
+        console.log('All zaps: ', allZaps);
+
+        // setZaps(prevState => [...prevState, ...allZaps]); gives duplicates
+        setZaps(allZaps); // Update this line to replace the state instead of appending
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          setError(`Failed to fetch users: ${error.message}`);
+        } else {
+          setError('An unknown error occurred while fetching users');
+        }
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (initialRender.current) {
+      initialRender.current = false;
+      // Clear the zaps
+      setZaps([]);
+      fetchZaps();
+    } else {
+      console.log(`Timestamp updated: ${timestamp}`);
+      fetchZaps();
+    }
+
   }, [timestamp]);
 
   return (

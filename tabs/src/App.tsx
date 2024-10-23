@@ -1,15 +1,14 @@
-import { Routes, Route, useNavigate } from "react-router-dom";
-// Fluent UI imports
-import { ThemeProvider } from '@fluentui/react';
-import { theme } from './styles/Theme'; // Adjust the import path as necessary
 
-// Material-UI imports
-import Grid from "@mui/material/Grid";
+import { Routes, Route, useNavigate } from 'react-router-dom';
+// Fluent UI imports
+import { Stack } from '@fluentui/react';
 
 // MSAL imports
-import { MsalProvider } from "@azure/msal-react";
-import { IPublicClientApplication } from "@azure/msal-browser";
-import { CustomNavigationClient } from "./utils/NavigationClient";
+import { MsalProvider } from '@azure/msal-react';
+import { IPublicClientApplication } from '@azure/msal-browser';
+import { CustomNavigationClient } from './utils/NavigationClient';
+import RequireAuth from './components/RequireAuth';
+
 
 // Sample app imports
 import { PageLayout } from "./ui-components/PageLayout";
@@ -42,13 +41,45 @@ function App({ pca }: AppProps) {
 }
 
 function Pages() {
-    return (
-        <Routes>
-            <Route path="/test" element={<FeedComponent />} />
-            <Route path="/" element={<Home />} />
-            <Route path="/feed" element={<Natalia />} />
-        </Routes>
-    );
+
+  return (
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route
+        path="/feed"
+        element={
+          <RequireAuth>
+            <Feed />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <RequireAuth>
+            <Users />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/Rewards"
+        element={
+          <RequireAuth>
+            <Rewards />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/Wallet"
+        element={
+          <RequireAuth>
+            <Wallet />
+          </RequireAuth>
+        }
+      />
+    </Routes>
+  );
+
 }
 
 export default App;
